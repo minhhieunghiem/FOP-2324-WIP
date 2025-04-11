@@ -227,7 +227,11 @@ public class HexGridImpl implements HexGrid {
     @StudentImplementationRequired("H1.3")
     public Map<Set<TilePosition>, Edge> getRoads(final Player player) {
         // TODO: H1.3
-        return org.tudalgo.algoutils.student.Student.crash("H1.3 - Remove if implemented");
+        return Collections.unmodifiableMap(edges.entrySet()
+            .stream()
+            .filter(edgeEntry -> edgeEntry.getValue().hasRoad()) //filter for edges with player-owned roads
+            .filter(edgeEntry -> edgeEntry.getValue().getRoadOwner().equals(player))
+            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))); //collect entry set back to map
     }
 
     @Override
@@ -236,6 +240,17 @@ public class HexGridImpl implements HexGrid {
         throw new UnsupportedOperationException("Unimplemented method 'getLongestRoad'");
     }
 
+    /**
+     * Add road between two given TilePositions. A road is only added if:
+     * -There is no already existing road between the given TilePositions
+     * -The player/builder is connected via an adjacent road,
+     * or an adjacent settlement owned by the player if checkVillages is correct
+     * @param position0     the first position of the road
+     * @param position1     the second position of the road
+     * @param player        the player that owns the road
+     * @param checkVillages whether to check if the player has a connected village
+     * @return True when road is added successfully
+     */
     @Override
     @StudentImplementationRequired("H1.3")
     public boolean addRoad(
@@ -243,7 +258,25 @@ public class HexGridImpl implements HexGrid {
         final boolean checkVillages
     ) {
         // TODO: H1.3
-        return org.tudalgo.algoutils.student.Student.crash("H1.3 - Remove if implemented");
+        final var edge = edges.get(Set.of(position0, position1));
+        if(edge==null){
+            throw new IllegalArgumentException("Edge is null");
+        }
+        if(edge.hasRoad()
+            ||
+            !checkVillages
+            && edge.getConnectedEdges()
+            .stream().noneMatch(e -> e.hasRoad() && e.getRoadOwner().equals(player))
+            ||
+            checkVillages && edge.getIntersections()
+                .stream()
+                .noneMatch(i -> i.getSettlement()!=null && i.getSettlement().owner().equals(player)
+                && i.getConnectedEdges().stream().filter(Edge::hasRoad).noneMatch(e -> e.getRoadOwner().equals(player)))
+        ){
+            return false;
+        }
+        edge.getRoadOwnerProperty().setValue(player);
+        return true;
     }
 
     @Override

@@ -8,6 +8,7 @@ import projekt.model.Player;
 import projekt.model.TilePosition;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Default implementation of {@link Edge}.
@@ -50,14 +51,21 @@ public record EdgeImpl(
     @StudentImplementationRequired("H1.3")
     public boolean connectsTo(final Edge other) {
         // TODO: H1.3
-        return org.tudalgo.algoutils.student.Student.crash("H1.3 - Remove if implemented");
+        return getIntersections().stream().anyMatch(intersection -> intersection.getConnectedEdges().contains(other));
     }
 
     @Override
     @StudentImplementationRequired("H1.3")
     public Set<Intersection> getIntersections() {
         // TODO: H1.3
-        return org.tudalgo.algoutils.student.Student.crash("H1.3 - Remove if implemented");
+        final var edgeDir = TilePosition.EdgeDirection.fromRelativePosition(TilePosition.subtract(this.position2, this.position1));
+        final var is1 = this.grid.getIntersections()
+            .get(Set.of(this.position1, this.position2, TilePosition.neighbour(this.position1, edgeDir.left())));
+        final var is2 = this.grid.getIntersections()
+            .get(Set.of(this.position1, this.position2, TilePosition.neighbour(this.position1, edgeDir.right())));
+        if (is1 == null || is2 == null)
+            throw new RuntimeException("Edge is not connected to two intersections");
+        return Set.of(is1, is2);
     }
 
     @Override
@@ -69,6 +77,9 @@ public record EdgeImpl(
     @StudentImplementationRequired("H1.3")
     public Set<Edge> getConnectedRoads(final Player player) {
         // TODO: H1.3
-        return org.tudalgo.algoutils.student.Student.crash("H1.3 - Remove if implemented");
+        return getConnectedEdges().stream()
+            .filter(Edge::hasRoad)
+            .filter(edge -> edge.getRoadOwnerProperty().getValue().equals(player))
+            .collect(Collectors.toUnmodifiableSet());
     }
 }

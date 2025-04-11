@@ -8,6 +8,7 @@ import org.tudalgo.algoutils.student.annotation.StudentImplementationRequired;
 import projekt.Config;
 import projekt.model.buildings.Settlement;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -76,49 +77,76 @@ public class PlayerImpl implements Player {
     @StudentImplementationRequired("H1.1")
     public Map<ResourceType, Integer> getResources() {
         // TODO: H1.1
-        return org.tudalgo.algoutils.student.Student.crash("H1.1 - Remove if implemented");
+        //Getter method that returns an unmodifiable map of a player's resources and their quantities
+        return Collections.unmodifiableMap(this.resources);
     }
 
     @Override
     @StudentImplementationRequired("H1.1")
     public void addResource(final ResourceType resourceType, final int amount) {
         // TODO: H1.1
-        org.tudalgo.algoutils.student.Student.crash("H1.1 - Remove if implemented");
+        //If resourceType is not present, replace with amount. If present, replaced with a remapping function
+        resources.merge(resourceType, amount, Integer::sum);
     }
 
     @Override
     @StudentImplementationRequired("H1.1")
     public void addResources(final Map<ResourceType, Integer> resources) {
         // TODO: H1.1
-        org.tudalgo.algoutils.student.Student.crash("H1.1 - Remove if implemented");
+        //Runs addResource for every key
+        resources.forEach(this::addResource);
     }
 
     @Override
     @StudentImplementationRequired("H1.1")
     public boolean hasResources(final Map<ResourceType, Integer> resources) {
         // TODO: H1.1
-        return org.tudalgo.algoutils.student.Student.crash("H1.1 - Remove if implemented");
+        //If one of the player's resources is smaller than the amount required then return false
+        return resources
+            .entrySet()
+            .stream()
+            .noneMatch
+                (e -> this.resources.getOrDefault(e.getKey(), 0) < e.getValue());
     }
 
     @Override
     @StudentImplementationRequired("H1.1")
     public boolean removeResource(final ResourceType resourceType, final int amount) {
         // TODO: H1.1
-        return org.tudalgo.algoutils.student.Student.crash("H1.1 - Remove if implemented");
+        if(!hasResources(Map.of(resourceType, amount))){
+            return false;
+        }
+        resources.merge(resourceType, -amount, Integer::sum);
+        return true;
     }
 
     @Override
     @StudentImplementationRequired("H1.1")
     public boolean removeResources(final Map<ResourceType, Integer> resources) {
         // TODO: H1.1
-        return org.tudalgo.algoutils.student.Student.crash("H1.1 - Remove if implemented");
+        if(!hasResources(resources)){
+            return false;
+        }
+        for(Map.Entry<ResourceType, Integer> entry : resources.entrySet()){
+            removeResource(entry.getKey(), entry.getValue());
+        }
+        return true;
     }
 
     @Override
     @StudentImplementationRequired("H1.1")
     public int getTradeRatio(final ResourceType resourceType) {
         // TODO: H1.1
-        return org.tudalgo.algoutils.student.Student.crash("H1.1 - Remove if implemented");
+        return getHexGrid()
+            .getIntersections()
+            .values().stream()
+            .filter(intersection -> intersection.getPort()!=null //get only intersections with generic or specialised ports
+                &&
+                intersection.getPort().resourceType()==null||intersection.getPort().resourceType().equals(resourceType))
+            .filter(intersection -> intersection.playerHasSettlement(this)) //only get intersections -> ports owned by this player
+            .map(intersection -> intersection.getPort().ratio()) //map intersections with ports to the ports' respective ratios
+            .min(Integer::compareTo)
+            .orElse(4); //pick the first/lowest/best trade ratio, else default to 4
     }
 
     @Override
@@ -146,35 +174,40 @@ public class PlayerImpl implements Player {
     @StudentImplementationRequired("H1.2")
     public Map<DevelopmentCardType, Integer> getDevelopmentCards() {
         // TODO: H1.2
-        return org.tudalgo.algoutils.student.Student.crash("H1.2 - Remove if implemented");
+        return Collections.unmodifiableMap(developmentCards);
     }
 
     @Override
     @StudentImplementationRequired("H1.2")
     public void addDevelopmentCard(final DevelopmentCardType developmentCardType) {
         // TODO: H1.2
-        org.tudalgo.algoutils.student.Student.crash("H1.2 - Remove if implemented");
+        developmentCards.merge(developmentCardType, 1, Integer::sum);
     }
 
     @Override
     @StudentImplementationRequired("H1.2")
     public boolean removeDevelopmentCard(final DevelopmentCardType developmentCardType) {
         // TODO: H1.2
-        return org.tudalgo.algoutils.student.Student.crash("H1.2 - Remove if implemented");
+        if(developmentCards.get(developmentCardType)<1){
+            return false;
+        }
+        developmentCards.merge(developmentCardType, -1, Integer::sum);
+        playedDevelopmentCards.merge(developmentCardType, 1, Integer::sum); //a removed dev card is played
+        return true;
     }
 
     @Override
     @StudentImplementationRequired("H1.2")
     public int getTotalDevelopmentCards() {
         // TODO: H1.2
-        return org.tudalgo.algoutils.student.Student.crash("H1.2 - Remove if implemented");
+        return developmentCards.values().stream().mapToInt(Integer::intValue).sum();
     }
 
     @Override
     @StudentImplementationRequired("H1.2")
     public int getKnightsPlayed() {
         // TODO: H1.2
-        return org.tudalgo.algoutils.student.Student.crash("H1.2 - Remove if implemented");
+        return playedDevelopmentCards.getOrDefault(DevelopmentCardType.KNIGHT, 0);
     }
 
     /**
