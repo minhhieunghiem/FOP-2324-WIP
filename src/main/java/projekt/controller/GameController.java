@@ -1,24 +1,19 @@
 package projekt.controller;
 
-import javafx.beans.property.IntegerProperty;
-import javafx.beans.property.Property;
-import javafx.beans.property.SimpleIntegerProperty;
-import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.property.*;
 import org.tudalgo.algoutils.student.annotation.DoNotTouch;
 import org.tudalgo.algoutils.student.annotation.StudentImplementationRequired;
 import projekt.Config;
-import projekt.model.DevelopmentCardType;
-import projekt.model.GameState;
-import projekt.model.HexGridImpl;
-import projekt.model.Player;
-import projekt.model.ResourceType;
+import projekt.controller.actions.AcceptTradeAction;
+import projekt.controller.actions.EndTurnAction;
+import projekt.controller.actions.PlayerAction;
+import projekt.controller.actions.SelectRobberTileAction;
+import projekt.model.*;
+import projekt.model.tiles.Tile;
+import projekt.model.tiles.TileImpl;
 
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -287,18 +282,31 @@ public class GameController {
     @StudentImplementationRequired("H2.1")
     private void regularTurn() {
         // TODO: H2.1
-        org.tudalgo.algoutils.student.Student.crash("H2.1 - Remove if implemented");
+        final PlayerController currentPlayer = getActivePlayerController();
+        PlayerAction action = currentPlayer.waitForNextAction(PlayerObjective.REGULAR_TURN);
+        while (!(action instanceof EndTurnAction)){
+            action=currentPlayer.waitForNextAction();
+        }
     }
 
     /**
      * Executes the first round of the game.
+     * withActiveController sets the given player as the active player.
+     * waitForNextAction pauses the game loop until a specific valid action is taken (placing villages/roads).
      * <p>
      * Each player places two villages and two roads.
      */
     @StudentImplementationRequired("H2.1")
     private void firstRound() {
         // TODO: H2.1
-        org.tudalgo.algoutils.student.Student.crash("H2.1 - Remove if implemented");
+        for(final PlayerController playerController : playerControllers.values()){
+            withActivePlayer(playerController, () -> {
+                    playerController.waitForNextAction(PlayerObjective.PLACE_VILLAGE);
+                    playerController.waitForNextAction(PlayerObjective.PLACE_ROAD);
+                    playerController.waitForNextAction(PlayerObjective.PLACE_VILLAGE);
+                    playerController.waitForNextAction(PlayerObjective.PLACE_ROAD);
+            });
+        }
     }
 
     /**
@@ -315,7 +323,27 @@ public class GameController {
         final Map<ResourceType, Integer> request
     ) {
         // TODO: H2.3
-        org.tudalgo.algoutils.student.Student.crash("H2.3 - Remove if implemented");
+        final SimpleBooleanProperty tradeAccepted = new SimpleBooleanProperty(true); //booleans cannot be reassigned within lambda
+        for(final PlayerController pc : playerControllers.values()
+            .stream()
+            .filter
+                (playerController -> playerController
+                    .canAcceptTradeOffer(offeringPlayer, request)).toList()){
+            pc.setPlayerTradeOffer(offeringPlayer, offer, request);
+            withActivePlayer(pc, () -> {
+                final PlayerAction action = pc.waitForNextAction(PlayerObjective.ACCEPT_TRADE);
+                if (action instanceof final AcceptTradeAction tradeAction) {
+                    if (tradeAction.accepted()) {
+                        tradeAccepted.set(true);
+                    }
+                }
+            });
+            pc.resetPlayerTradeOffer();
+            if (tradeAccepted.get()) {
+                break;
+            }
+        }
+        activePlayerControllerProperty.setValue(playerControllers.get(offeringPlayer));
     }
 
     /**
@@ -328,17 +356,42 @@ public class GameController {
     @StudentImplementationRequired("H2.1")
     private void diceRollSeven() {
         // TODO: H2.1
-        org.tudalgo.algoutils.student.Student.crash("H2.1 - Remove if implemented");
+        final PlayerController originalPlayer=getActivePlayerController();
+        for(PlayerController playerController : playerControllers.values()){
+            withActivePlayer(playerController, ()->{
+                final int totalResource = playerController.getPlayer().getResources()
+                    .values().stream().mapToInt(Integer::intValue).sum();
+                if(totalResource>7){
+                   playerController.setCardsToSelect(Math.floorDiv(totalResource, 2));
+                   playerController.waitForNextAction(PlayerObjective.DROP_CARDS) ;
+                }
+            });
+        }
+        activePlayerControllerProperty.setValue(originalPlayer);
+        originalPlayer.waitForNextAction(PlayerObjective.SELECT_ROBBER_TILE);
+        originalPlayer.waitForNextAction(PlayerObjective.SELECT_CARD_TO_STEAL);
     }
 
     /**
      * Distributes the resources of the given dice roll to the players.
-     *
+     * Tiles with the corresponding dice roll number awards the owner the resource of the tile by 1 or 2
+     * (depends on village or city)
      * @param diceRoll The dice roll to distribute the resources for.
      */
     @StudentImplementationRequired("H2.2")
     public void distributeResources(final int diceRoll) {
         // TODO: H2.2
-        org.tudalgo.algoutils.student.Student.crash("H2.2 - Remove if implemented");
+        for(final Tile tile : state.getGrid()
+            .getTiles(diceRoll)
+            .stream().filter(Predicate.not(Tile::hasRobber)).collect(Collectors.toSet())){
+            for(final Intersection intersection: tile.getIntersections()){
+                Optional.ofNullable(intersection.getSettlement()).ifPresent(
+                    settlement -> settlement.owner().addResource(
+                        tile.getType().resourceType,
+                        settlement.type().resourceAmount
+                    )
+                );
+            }
+        }
     }
 }
