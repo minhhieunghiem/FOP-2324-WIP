@@ -23,3 +23,23 @@ The first part of the assignment focused on implementing the entire game model, 
   - Building and upgrading settlements (`placeVillage`, `upgradeSettlement`)
 
 The implementation adheres to the provided interfaces and makes use of Java standard library features such as `Map`, `Set`, `Optional`, `Stream`, etc.
+
+### Task H2: Controller Logic and Game Loop (26 Points)
+
+Implemented the controller logic responsible for managing the game flow:
+
+- Game start logic with firstRound(), allowing each player to place two settlements and roads
+- regularTurn(), allowing players to take normal actions until they end their turn
+- diceRollSeven(), handling logic for when a 7 is rolled (dropping cards, robber movement, and stealing)
+- distributeResources(), distributing resources to players based on dice roll
+- offerTrade(), managing trade logic between players with validation and responses
+
+### Task H3: Graphical User Interface (24 Points)
+
+Implemented GUI interaction and state updates:
+
+- Enabled and disabled buttons for valid player actions
+- Highlighted valid intersections and edges for building
+- Connected GUI input to game actions using JavaFX properties
+- Implemented player creation menu with color selection, bot toggle, and add/remove functionality
+- Updated GUI based on PlayerObjective, including stealing, selecting robber tile, and playing development cards
