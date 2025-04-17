@@ -5,6 +5,8 @@ import javafx.beans.property.SimpleObjectProperty;
 import org.tudalgo.algoutils.student.annotation.DoNotTouch;
 import org.tudalgo.algoutils.student.annotation.StudentImplementationRequired;
 import projekt.Config;
+import projekt.controller.actions.BuildRoadAction;
+import projekt.controller.actions.BuildVillageAction;
 import projekt.controller.actions.IllegalActionException;
 import projekt.controller.actions.PlayerAction;
 import projekt.model.DevelopmentCardType;
@@ -336,7 +338,12 @@ public class PlayerController {
     @StudentImplementationRequired("H2.4")
     public boolean canBuildVillage() {
         // TODO: H2.4
-        return org.tudalgo.algoutils.student.Student.crash("H2.4 - Remove if implemented");
+        final Map<ResourceType, Integer> requiredCost = Config.SETTLEMENT_BUILDING_COST.get(Settlement.Type.VILLAGE);
+        return (
+            (playerObjectiveProperty.getValue().equals(PlayerObjective.PLACE_VILLAGE)
+            ||player.hasResources(requiredCost)
+            )
+        && player.getRemainingVillages()>0);
     }
 
     /**
@@ -395,7 +402,14 @@ public class PlayerController {
     @StudentImplementationRequired("H2.5")
     public void upgradeVillage(final Intersection intersection) throws IllegalActionException {
         // TODO: H2.5
-        org.tudalgo.algoutils.student.Student.crash("H2.5 - Remove if implemented");
+        final Map<ResourceType, Integer> upgradeCost = Config.SETTLEMENT_BUILDING_COST.get(Settlement.Type.CITY);
+        if(!canUpgradeVillage()){
+            throw new IllegalActionException("Cannot upgrade village");
+        }
+        if(!intersection.upgradeSettlement(player)){
+            throw new IllegalActionException("Cannot upgrade village at this intersection");
+        }
+        player.removeResources(upgradeCost);
     }
 
     /**
@@ -436,7 +450,12 @@ public class PlayerController {
     @StudentImplementationRequired("H2.4")
     public boolean canBuildRoad() {
         // TODO: H2.4
-        return org.tudalgo.algoutils.student.Student.crash("H2.4 - Remove if implemented");
+        final Map<ResourceType, Integer> requiredCost = Config.ROAD_BUILDING_COST;
+        return (
+            (playerObjectiveProperty.getValue().equals(PlayerObjective.PLACE_ROAD)
+            || player.hasResources(requiredCost))
+            && player.getRemainingRoads()>0
+            );
     }
 
     /**
@@ -466,7 +485,16 @@ public class PlayerController {
     @StudentImplementationRequired("H2.4")
     public void buildRoad(final TilePosition position0, final TilePosition position1) throws IllegalActionException {
         // TODO: H2.4
-        org.tudalgo.algoutils.student.Student.crash("H2.4 - Remove if implemented");
+        if (!canBuildRoad()){
+            throw new IllegalActionException("Cannot build road");
+        }
+        if(!gameController.getState().getGrid().addRoad(position0, position1,player,isFirstRound())){
+            throw new IllegalActionException("Cannot build road between these positions");
+        }
+        final Map<ResourceType, Integer> buildCost = Config.ROAD_BUILDING_COST;
+        if(!playerObjectiveProperty.getValue().equals(PlayerObjective.PLACE_ROAD)){
+            player.removeResources(buildCost);
+        }
     }
 
     // Development card methods
