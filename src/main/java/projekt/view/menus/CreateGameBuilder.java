@@ -3,17 +3,18 @@ package projekt.view.menus;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
-import javafx.scene.control.TextField;
+import javafx.scene.control.*;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import org.tudalgo.algoutils.student.annotation.DoNotTouch;
 import org.tudalgo.algoutils.student.annotation.StudentImplementationRequired;
 import projekt.model.PlayerImpl;
 import projekt.model.PlayerImpl.Builder;
 
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * A Builder to create the create game view.
@@ -68,7 +69,10 @@ public class CreateGameBuilder extends MenuBuilder {
                     }
                 });
                 playerListingHBox.getChildren().addAll(
-                    playerNameTextField
+                    playerNameTextField,
+                    createBotOrPlayerSelector(playerBuilder),
+                    createPlayerColorPicker(playerBuilder),
+                    createRemovePlayerButton(playerBuilder.getId())
                 );
                 playerListVBox.getChildren().add(playerListingHBox);
             }
@@ -83,6 +87,7 @@ public class CreateGameBuilder extends MenuBuilder {
         });
 
         mainBox.getChildren().addAll(
+            createAddPlayerButton(), 
             playerListVBox,
             startGameButton,
             startGameErrorLabel
@@ -100,7 +105,12 @@ public class CreateGameBuilder extends MenuBuilder {
     @StudentImplementationRequired("H3.4")
     private Node createAddPlayerButton() {
         // TODO: H3.4
-        return org.tudalgo.algoutils.student.Student.crash("H3.4 - Remove if implemented");
+        final HBox addRemoveButtonRow = new HBox();
+        addRemoveButtonRow.setAlignment(Pos.CENTER);
+        final Button addPlayerButton = new Button(String.format("%c  Add Player", 0xF02D8));
+        addPlayerButton.setOnAction(e -> this.observablePlayers.add(this.nextPlayerBuilder()));
+        addRemoveButtonRow.getChildren().addAll(addPlayerButton);
+        return addRemoveButtonRow;
     }
 
     /**
@@ -114,11 +124,25 @@ public class CreateGameBuilder extends MenuBuilder {
     @StudentImplementationRequired("H3.4")
     private Node createPlayerColorPicker(final Builder playerBuilder) {
         // TODO: H3.4
-        return org.tudalgo.algoutils.student.Student.crash("H3.4 - Remove if implemented");
+        final ColorPicker colorPicker = new ColorPicker(playerBuilder.getColor());
+        colorPicker.setOnAction(e -> {
+            final Color newColor = colorPicker.getValue();
+            if (this.observablePlayers
+                .stream()
+                .filter(Predicate.not(playerBuilder::equals))
+                .anyMatch(x -> x.getColor().equals(newColor))) {
+                new Alert(Alert.AlertType.ERROR, "Two Players cannot have the same color!").showAndWait();
+                colorPicker.setValue(playerBuilder.getColor());
+            } else {
+                playerBuilder.color(newColor);
+            }
+        });
+        return colorPicker;
     }
 
     /**
      * Creates a node to select whether the player is a bot or not.
+     * Includes logic for changing icons based on whether the player is human or AI and a swap functionality.
      *
      * @param playerBuilder the builder for the player to create the selector for
      * @return a node to select whether the player is a bot or not
@@ -126,7 +150,25 @@ public class CreateGameBuilder extends MenuBuilder {
     @StudentImplementationRequired("H3.4")
     private Node createBotOrPlayerSelector(final Builder playerBuilder) {
         // TODO: H3.4
-        return org.tudalgo.algoutils.student.Student.crash("H3.4 - Remove if implemented");
+        enum PlayerTypeIcons {
+            BOT(String.format("%c", 0xF06A9)),
+            PLAYER(String.format("%c", 0xF17C4));
+
+            public final String icon;
+
+            PlayerTypeIcons(final String icon) {
+                this.icon = icon;
+            }
+
+            public static String getIcon(final PlayerImpl.Builder builder) {
+                return builder.isAi() ? BOT.icon : PLAYER.icon;
+            }
+        }
+        final Button botOrPlayerSelectorButton = new Button();
+        botOrPlayerSelectorButton.textProperty()
+            .bind(playerBuilder.aiProperty().map(x -> PlayerTypeIcons.getIcon(playerBuilder)));
+        botOrPlayerSelectorButton.setOnAction(e -> playerBuilder.ai(!playerBuilder.isAi()));
+        return botOrPlayerSelectorButton;
     }
 
     /**
@@ -138,19 +180,27 @@ public class CreateGameBuilder extends MenuBuilder {
     @StudentImplementationRequired("H3.4")
     private Button createRemovePlayerButton(final int id) {
         // TODO: H3.4
-        return org.tudalgo.algoutils.student.Student.crash("H3.4 - Remove if implemented");
+        final Button removePlayerButton = new Button(String.format("%c", 0xF0375));
+        removePlayerButton.setOnAction(e -> {
+            this.removePlayer(id);
+        });
+        return removePlayerButton;
     }
 
     /**
      * Removes the player with the given id and updates the ids of the remaining
-     * players.
+     * players. IDs after the removed ID are updated to maintain a continuous list of numbers.
+     * Player indices are 1-based: Player 1, player 2
      *
      * @param id the id of the player to remove
      */
     @StudentImplementationRequired("H3.4")
     private void removePlayer(final int id) {
         // TODO: H3.4
-        org.tudalgo.algoutils.student.Student.crash("H3.4 - Remove if implemented");
+        for(int i=id-1; i< observablePlayers.size();i++){
+            observablePlayers.get(i).id(i);
+        }
+        observablePlayers.remove(id-1);
     }
 
     /**

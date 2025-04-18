@@ -28,6 +28,7 @@ import projekt.view.gameControls.UseDevelopmentCardDialog;
 
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 
 /**
@@ -120,7 +121,53 @@ public class PlayerActionsController implements Controller {
     @StudentImplementationRequired("H3.2")
     private void updateUIBasedOnObjective(final PlayerObjective objective) {
         // TODO: H3.2
-        org.tudalgo.algoutils.student.Student.crash("H3.2 - Remove if implemented");
+        System.out.println("Objective: "+objective);
+        removeAllHighlights();
+        drawEdges();
+        drawIntersections();
+        getHexGridController().drawTiles();
+        builder.disableAllButtons();
+        updatePlayerInformation();
+        if(getPlayer().isAi()){
+            return;
+        }
+        Set<Class<? extends PlayerAction>> allowedActions = getPlayerObjective().getAllowedActions();
+        if(allowedActions.contains(EndTurnAction.class)){
+            builder.enableEndTurnButton();
+        }
+        if (allowedActions.contains(RollDiceAction.class)) {
+            builder.enableRollDiceButton();
+        }
+        if (allowedActions.contains(TradeAction.class)) {
+            builder.enableTradeButton();
+        }
+        if (allowedActions.contains(PlayDevelopmentCardAction.class)) {
+            updateUseDevelopmentCardButtonState();
+        }
+        if (allowedActions.contains(BuyDevelopmentCardAction.class)) {
+            updateBuyDevelopmentCardButtonState();
+        }
+        if (allowedActions.contains(BuildVillageAction.class)) {
+            updateBuildVillageButtonState();
+        }
+        if (allowedActions.contains(UpgradeVillageAction.class)) {
+            updateUpgradeVillageButtonState();
+        }
+        if (allowedActions.contains(BuildRoadAction.class)) {
+            updateBuildRoadButtonState();
+        }
+        if (allowedActions.contains(SelectRobberTileAction.class)) {
+            getHexGridController().highlightTiles(this::selectRobberTileAction);
+        }
+        if (allowedActions.contains(StealCardAction.class)) {
+            selectCardToStealAction();
+        }
+        if (allowedActions.contains(SelectCardsAction.class) && getPlayerState().cardsToSelect() > 0) {
+            selectResources(getPlayerState().cardsToSelect());
+        }
+        if (allowedActions.contains(AcceptTradeAction.class)) {
+            acceptTradeOffer();
+        }
     }
 
     /**
